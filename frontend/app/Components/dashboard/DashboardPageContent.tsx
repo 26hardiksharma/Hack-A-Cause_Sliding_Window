@@ -1,8 +1,18 @@
 'use client';
-import { TrendingUp } from 'lucide-react';
-import type { District, Tanker } from '@/lib/api';
-import { riskColor, riskBg, riskVwsiPercent } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { TrendingUp, AlertTriangle, MessageSquare } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell, PieChart, Pie,
+} from 'recharts';
+import { api, type District, type Tanker, riskColor, riskBg, riskVwsiPercent } from '@/lib/api';
 
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse bg-slate-100 rounded-lg ${className}`} />;
+}
+
+// ─── DashboardStats ───────────────────────────────────────────────────────────
 interface DashboardStatsProps {
   avgVWSI: number;
   criticalCount: number;
@@ -14,7 +24,7 @@ interface DashboardStatsProps {
   loadingTankers: number;
 }
 
-export function DashboardStats({
+function DashboardStats({
   avgVWSI, criticalCount, districtCount,
   totalStress, highCriticalCount,
   activeTankers, totalTankers, loadingTankers,
@@ -88,11 +98,8 @@ export function DashboardStats({
   );
 }
 
-interface DashboardMapProps {
-  districts: District[];
-}
-
-export function DashboardDistrictMap({ districts }: DashboardMapProps) {
+// ─── DashboardDistrictMap ─────────────────────────────────────────────────────
+function DashboardDistrictMap({ districts }: { districts: District[] }) {
   return (
     <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
       <div className="flex justify-between items-center mb-4">
@@ -102,7 +109,7 @@ export function DashboardDistrictMap({ districts }: DashboardMapProps) {
         </span>
       </div>
       <div className="space-y-3">
-        {districts.sort((a, b) => b.vwsi - a.vwsi).map(d => (
+        {[...districts].sort((a, b) => b.vwsi - a.vwsi).map(d => (
           <div key={d.id} className="flex items-center gap-4 group hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors">
             <div className="w-32 min-w-[8rem]">
               <p className="text-sm font-bold text-slate-800 truncate">{d.name}</p>
@@ -132,22 +139,22 @@ export function DashboardDistrictMap({ districts }: DashboardMapProps) {
   );
 }
 
-interface VWSITrendsProps {
+// ─── VWSITrendsLive ───────────────────────────────────────────────────────────
+function VWSITrendsLive({
+  history,
+  topDistrictName,
+}: {
   history: { name: string; value: number }[];
   topDistrictName?: string;
-}
-
-export function VWSITrendsLive({ history, topDistrictName }: VWSITrendsProps) {
-  // Import recharts dynamically is not needed here since this file is already 'use client'
-  const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } =
-    require('recharts') as typeof import('recharts');
-
+}) {
   return (
     <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-lg font-bold text-slate-800">VWSI Weekly Trend</h2>
-          {topDistrictName && <p className="text-xs text-slate-400 mt-0.5">{topDistrictName} (highest risk)</p>}
+          {topDistrictName && (
+            <p className="text-xs text-slate-400 mt-0.5">{topDistrictName} (highest risk)</p>
+          )}
         </div>
       </div>
       <div className="h-[200px] w-full">
@@ -157,10 +164,19 @@ export function VWSITrendsLive({ history, topDistrictName }: VWSITrendsProps) {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 1]} />
-              <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <Tooltip
+                cursor={{ fill: '#f8fafc' }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
               <Bar dataKey="value" name="VWSI" radius={[4, 4, 0, 0]}>
                 {history.map((_, i) => (
-                  <Cell key={i} fill={i === history.length - 1 ? '#e2e8f0' : i === history.length - 2 ? '#3b82f6' : '#bfdbfe'} />
+                  <Cell
+                    key={i}
+                    fill={
+                      i === history.length - 1 ? '#e2e8f0' :
+                      i === history.length - 2 ? '#3b82f6' : '#bfdbfe'
+                    }
+                  />
                 ))}
               </Bar>
             </BarChart>
@@ -173,20 +189,19 @@ export function VWSITrendsLive({ history, topDistrictName }: VWSITrendsProps) {
   );
 }
 
-interface AllocationPieProps {
-  activeTankers: number;
-  totalTankers: number;
-}
-
+// ─── AllocationPieLive ────────────────────────────────────────────────────────
 const PIE_COLORS = ['#10B981', '#EF4444'];
 
-export function AllocationPieLive({ activeTankers, totalTankers }: AllocationPieProps) {
-  const { PieChart, Pie, Cell, ResponsiveContainer } =
-    require('recharts') as typeof import('recharts');
-
+function AllocationPieLive({
+  activeTankers,
+  totalTankers,
+}: {
+  activeTankers: number;
+  totalTankers: number;
+}) {
   const data = [
-    { name: 'Active', value: activeTankers },
-    { name: 'Idle / Loading', value: totalTankers - activeTankers },
+    { name: 'Active',          value: activeTankers },
+    { name: 'Idle / Loading',  value: totalTankers - activeTankers },
   ];
 
   return (
@@ -195,8 +210,17 @@ export function AllocationPieLive({ activeTankers, totalTankers }: AllocationPie
       <div className="flex items-center justify-center relative h-48">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
-              {data.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+            <Pie
+              data={data}
+              cx="50%" cy="50%"
+              innerRadius={60} outerRadius={80}
+              paddingAngle={5}
+              dataKey="value"
+              stroke="none"
+            >
+              {data.map((_, i) => (
+                <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+              ))}
             </Pie>
           </PieChart>
         </ResponsiveContainer>
@@ -220,14 +244,14 @@ export function AllocationPieLive({ activeTankers, totalTankers }: AllocationPie
   );
 }
 
-interface CriticalAlertsProps {
+// ─── CriticalAlertsLive ───────────────────────────────────────────────────────
+function CriticalAlertsLive({
+  criticalDistricts,
+  totalStress,
+}: {
   criticalDistricts: District[];
   totalStress: number;
-}
-
-export function CriticalAlertsLive({ criticalDistricts, totalStress }: CriticalAlertsProps) {
-  const { AlertTriangle, MessageSquare } = require('lucide-react') as typeof import('lucide-react');
-
+}) {
   return (
     <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100 flex-1">
       <div className="flex justify-between items-center mb-6">
@@ -267,6 +291,100 @@ export function CriticalAlertsLive({ criticalDistricts, totalStress }: CriticalA
             <p className="text-xs text-slate-500 mt-1">Ready to broadcast to {totalStress}+ villages</p>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DashboardPageContent (main orchestrator) ─────────────────────────────────
+export function DashboardPageContent() {
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [tankers,   setTankers]   = useState<Tanker[]>([]);
+  const [history,   setHistory]   = useState<{ name: string; value: number }[]>([]);
+  const [loading,   setLoading]   = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [dRes, tRes] = await Promise.all([
+          api.districts.list(),
+          api.tankers.list(),
+        ]);
+        setDistricts(dRes.districts);
+        setTankers(tRes);
+
+        const top = dRes.districts.reduce(
+          (a, b) => (a.vwsi > b.vwsi ? a : b),
+          dRes.districts[0],
+        );
+        if (top) {
+          const hRes = await api.districts.history(top.id, 7);
+          setHistory(
+            hRes.history.map(h => ({
+              name: new Date(h.date).toLocaleDateString('en', { weekday: 'short' }).toUpperCase(),
+              value: parseFloat(h.vwsi.toFixed(3)),
+            })),
+          );
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const avgVWSI          = districts.length ? districts.reduce((s, d) => s + d.vwsi, 0) / districts.length : 0;
+  const totalStress      = districts.reduce((s, d) => s + d.villages_under_stress, 0);
+  const activeTankers    = tankers.filter(t => t.status === 'active').length;
+  const loadingTankers   = tankers.filter(t => t.status === 'loading').length;
+  const criticalDistricts = districts.filter(d => d.risk_level === 'CRITICAL');
+  const highCriticalCount = districts.filter(d => d.risk_level === 'HIGH' || d.risk_level === 'CRITICAL').length;
+  const topDistrict      = districts.length ? districts.reduce((a, b) => (a.vwsi > b.vwsi ? a : b)) : null;
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-8">
+        <div className="xl:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-[24px]" />)}
+        </div>
+        <div className="xl:col-span-8 flex flex-col gap-6">
+          <Skeleton className="h-[420px] rounded-[24px]" />
+          <Skeleton className="h-[280px] rounded-[24px]" />
+        </div>
+        <div className="xl:col-span-4 flex flex-col gap-6">
+          <Skeleton className="h-[280px] rounded-[24px]" />
+          <Skeleton className="h-[300px] rounded-[24px]" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-8">
+      {/* Top stat cards */}
+      <DashboardStats
+        avgVWSI={avgVWSI}
+        criticalCount={criticalDistricts.length}
+        districtCount={districts.length}
+        totalStress={totalStress}
+        highCriticalCount={highCriticalCount}
+        activeTankers={activeTankers}
+        totalTankers={tankers.length}
+        loadingTankers={loadingTankers}
+      />
+
+      {/* Left column */}
+      <div className="xl:col-span-8 flex flex-col gap-6">
+        <DashboardDistrictMap districts={districts} />
+        <VWSITrendsLive history={history} topDistrictName={topDistrict?.name} />
+      </div>
+
+      {/* Right column */}
+      <div className="xl:col-span-4 flex flex-col gap-6">
+        <AllocationPieLive activeTankers={activeTankers} totalTankers={tankers.length} />
+        <CriticalAlertsLive criticalDistricts={criticalDistricts} totalStress={totalStress} />
       </div>
     </div>
   );
