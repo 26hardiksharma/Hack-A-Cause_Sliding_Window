@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${jakarta.variable} font-sans`}>
-      <body className="bg-[#F3F4F6] text-slate-900 antialiased flex h-screen w-screen overflow-hidden">
+      <body className="bg-[#F3F4F6] text-slate-900 antialiased flex min-h-screen">
         {children}
       </body>
     </html>

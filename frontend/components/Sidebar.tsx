@@ -1,33 +1,22 @@
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  Droplet,
-  LayoutDashboard,
-  Truck,
-  Map,
-  MessageSquare,
-  Settings,
-  Users,
-  FileText,
-  BarChart3,
-  Sparkles,
-  Bell,
-} from "lucide-react";
-import Image from "next/image";
+'use client'
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { Droplet, LayoutDashboard, Truck, MessageSquare, Settings, Users, BarChart3, Sparkles, Bell, History } from 'lucide-react';
 
 export function Sidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-    { name: "Tanker Fleet", href: "/tracking", icon: Truck },
-    { name: "AI Insights", href: "/ai-insights", icon: Sparkles },
-    { name: "SMS Alerts", href: "/alerts", icon: MessageSquare },
-    { name: "User Management", href: "/users", icon: Users },
-    { name: "Notifications", href: "/notifications", icon: Bell },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: 'Dashboard',         href: '/',                   icon: LayoutDashboard },
+    { name: 'Analytics',         href: '/analytics',          icon: BarChart3 },
+    { name: 'Tanker Fleet',      href: '/tracking',           icon: Truck },
+    { name: 'AI Insights',       href: '/ai-insights',        icon: Sparkles },
+    { name: 'Prediction History',href: '/prediction-history', icon: History },
+    { name: 'SMS Alerts',        href: '/alerts',             icon: MessageSquare },
+    { name: 'User Management',   href: '/users',              icon: Users },
+    { name: 'Notifications',     href: '/notifications',      icon: Bell },
+    { name: 'Settings',          href: '/settings',           icon: Settings },
   ];
 
   return (
@@ -95,6 +84,8 @@ export function Sidebar() {
         <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
           <Image
             alt="Profile"
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full object-cover"
             src="https://picsum.photos/seed/user/100/100"
           />

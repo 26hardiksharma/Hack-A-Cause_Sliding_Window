@@ -8,6 +8,7 @@ GET  /api/predict/{district_id} – latest prediction for a specific district
 from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional
+import asyncio
 
 from fastapi import APIRouter, HTTPException, Query
 from app.schemas import (
@@ -20,30 +21,54 @@ from app.ml.predictor import predict_single, predict_batch, get_model_version
 router = APIRouter()
 
 
+def _save_predictions(rows: list[dict]):
+    """Persist prediction rows to Supabase (best-effort, silent on error)."""
+    try:
+        from app.db import get_supabase
+        sb = get_supabase()
+        sb.table("predictions").insert(rows).execute()
+    except Exception as e:
+        print(f"[predictions] Supabase save skipped: {e}")
+
+
 @router.post("/predict", response_model=PredictionResult)
 def predict(payload: PredictionInput):
-    """Run LSTM inference for a single district observation."""
+    """Run LSTM inference for a single district observation and persist to DB."""
     result = predict_single(
         rainfall    = payload.rainfall,
         temperature = payload.temperature,
         humidity    = payload.humidity,
         rain_7d     = payload.rain_7d,
         rain_30d    = payload.rain_30d,
+        district_id = payload.district_id,
     )
+    predicted_at = datetime.utcnow()
+    # Persist to Supabase
+    _save_predictions([{
+        "district_id":   payload.district_id,
+        "district_name": payload.district_name,
+        "drought_prob":  result["drought_prob"],
+        "risk_level":    result["risk_level"],
+        "horizon_days":  7,
+        "model_version": get_model_version(),
+        "predicted_at":  predicted_at.isoformat(),
+    }])
     return PredictionResult(
-        district_id  = payload.district_id,
-        drought_prob = result["drought_prob"],
-        risk_level   = result["risk_level"],
-        predicted_at = datetime.fromisoformat(result["predicted_at"]),
-        horizon_days = 7,
+        district_id   = payload.district_id,
+        district_name = payload.district_name,
+        drought_prob  = result["drought_prob"],
+        risk_level    = result["risk_level"],
+        predicted_at  = predicted_at,
+        horizon_days  = 7,
     )
 
 
 @router.post("/predict/batch", response_model=BatchPredictionResponse)
 def predict_batch_route(payload: BatchPredictionRequest):
-    """Run LSTM batch inference for multiple districts."""
+    """Run LSTM batch inference for multiple districts and persist all to DB."""
     records = [d.model_dump() for d in payload.districts]
     results = predict_batch(records)
+    predicted_at = datetime.utcnow()
 
     predictions = [
         PredictionResult(
@@ -51,15 +76,30 @@ def predict_batch_route(payload: BatchPredictionRequest):
             district_name = payload.districts[i].district_name,
             drought_prob  = results[i]["drought_prob"],
             risk_level    = results[i]["risk_level"],
-            predicted_at  = datetime.fromisoformat(results[i]["predicted_at"]),
+            predicted_at  = predicted_at,
             horizon_days  = 7,
         )
         for i in range(len(results))
     ]
+
+    # Persist all predictions to Supabase
+    _save_predictions([
+        {
+            "district_id":   payload.districts[i].district_id,
+            "district_name": payload.districts[i].district_name,
+            "drought_prob":  results[i]["drought_prob"],
+            "risk_level":    results[i]["risk_level"],
+            "horizon_days":  7,
+            "model_version": get_model_version(),
+            "predicted_at":  predicted_at.isoformat(),
+        }
+        for i in range(len(results))
+    ])
+
     return BatchPredictionResponse(
         predictions   = predictions,
         model_version = get_model_version(),
-        generated_at  = datetime.utcnow(),
+        generated_at  = predicted_at,
     )
 
 
