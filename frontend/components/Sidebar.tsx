@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Droplet, LayoutDashboard, Truck, Map, MessageSquare, Settings, Users, FileText, BarChart3, Sparkles } from 'lucide-react';
+import { Droplet, LayoutDashboard, Truck, Map, MessageSquare, Settings, Users, FileText, BarChart3, Sparkles, Bell } from 'lucide-react';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -12,6 +12,8 @@ export function Sidebar() {
     { name: 'Tanker Fleet', href: '/tracking', icon: Truck },
     { name: 'AI Insights', href: '/ai-insights', icon: Sparkles },
     { name: 'SMS Alerts', href: '/alerts', icon: MessageSquare },
+    { name: 'User Management', href: '/users', icon: Users },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

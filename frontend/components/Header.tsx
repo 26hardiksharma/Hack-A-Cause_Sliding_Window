@@ -1,6 +1,7 @@
 'use client'
 import { Bell, Menu, Plus, Sparkles } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export function Header() {
   const pathname = usePathname();
@@ -13,6 +14,8 @@ export function Header() {
       case '/alerts': return { title: 'SMS Alert Management', breadcrumb: 'Communication > Configuration' };
       case '/ai-insights': return { title: 'AI Insights', breadcrumb: 'Home > AI Insights' };
       case '/settings': return { title: 'System Configuration', breadcrumb: 'Settings > Drought Thresholds' };
+      case '/users': return { title: 'User Access Management', breadcrumb: 'Settings > Users' };
+      case '/notifications': return { title: 'Notification Center', breadcrumb: 'Home > Notifications' };
       default: return { title: 'Dashboard', breadcrumb: 'Home' };
     }
   };
@@ -39,17 +42,17 @@ export function Header() {
             </select>
           </div>
         )}
-        <button className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600 shadow-sm relative transition-colors">
+        <Link href="/notifications" className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-blue-600 shadow-sm relative transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-        </button>
+        </Link>
         <button className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm shadow-blue-200">
           <Plus className="w-5 h-5" />
         </button>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors font-medium text-sm">
+        <Link href="/ai-insights" className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors font-medium text-sm">
           <Sparkles className="w-4 h-4" />
           AI Assistant
-        </button>
+        </Link>
       </div>
     </header>
   );
