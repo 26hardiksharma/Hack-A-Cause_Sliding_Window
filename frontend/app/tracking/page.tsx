@@ -1,16 +1,31 @@
-'use client'
+'use client';
+import { useState, useCallback, useEffect } from 'react';
 import { Truck, Droplet, Timer, CheckCircle, AlertTriangle, Hourglass, MoreHorizontal, TrendingUp } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { api, type Tanker, type FeedItem } from '@/lib/api';
 
 // Dynamically import the map so it only runs on the client (Google Maps needs window)
 const LiveMap = dynamic(() => import('@/components/LiveMap'), { ssr: false });
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
+// ── Inline Skeleton component ─────────────────────────────────────────────────
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse bg-slate-100 rounded-[24px] ${className ?? ''}`} />;
+}
+
+// ── Feed item icon map ────────────────────────────────────────────────────────
+const statusIcon: Record<string, { icon: React.ElementType; bg: string; cls: string }> = {
+  delivery: { icon: CheckCircle, bg: 'bg-emerald-50', cls: 'text-emerald-600' },
+  breakdown: { icon: AlertTriangle, bg: 'bg-white', cls: 'text-red-500' },
+  loading: { icon: Hourglass, bg: 'bg-orange-50', cls: 'text-orange-500' },
+  maintenance: { icon: Truck, bg: 'bg-slate-100', cls: 'text-slate-500' },
+};
+
 export default function TrackingPage() {
-  const [tankers,  setTankers]  = useState<Tanker[]>([]);
-  const [feed,     setFeed]     = useState<FeedItem[]>([]);
-  const [loading,  setLoading]  = useState(true);
+  const [tankers, setTankers] = useState<Tanker[]>([]);
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<Date>(new Date());
 
   const load = useCallback(async () => {
@@ -22,21 +37,26 @@ export default function TrackingPage() {
       setTankers(tRes);
       setFeed(fRes.feed);
       setLastSync(new Date());
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      // Backend may not be running — log as warning so the Next.js
+      // dev overlay doesn't treat it as a blocking error.
+      console.warn('[Tracking] Backend unavailable, showing empty state:', e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const active      = tankers.filter(t => t.status === 'active').length;
-  const loading_    = tankers.filter(t => t.status === 'loading').length;
+  const active = tankers.filter(t => t.status === 'active').length;
+  const loading_ = tankers.filter(t => t.status === 'loading').length;
   const maintenance = tankers.filter(t => t.status === 'maintenance').length;
-  const idle        = tankers.filter(t => t.status === 'idle').length;
-  const totalLoad   = tankers.reduce((s, t) => s + t.current_load_liters, 0);
-  const avgEta      = tankers.filter(t => t.eta_minutes).length
+  const idle = tankers.filter(t => t.status === 'idle').length;
+  const totalLoad = tankers.reduce((s, t) => s + t.current_load_liters, 0);
+  const avgEta = tankers.filter(t => t.eta_minutes).length
     ? Math.round(tankers.filter(t => t.eta_minutes).reduce((s, t) => s + (t.eta_minutes ?? 0), 0) / tankers.filter(t => t.eta_minutes).length)
     : 0;
-  const efficiency  = tankers.length ? Math.round((active / tankers.length) * 100) : 0;
+  const efficiency = tankers.length ? Math.round((active / tankers.length) * 100) : 0;
 
   if (loading) {
     return (
@@ -144,9 +164,9 @@ export default function TrackingPage() {
 
           <div className="space-y-4">
             {[
-              { label: 'On Time (Active)',        color: 'bg-emerald-500', count: active,      pct: tankers.length ? Math.round(active / tankers.length * 100) : 0 },
-              { label: 'Loading / En Route',      color: 'bg-orange-400',  count: loading_,    pct: tankers.length ? Math.round(loading_ / tankers.length * 100) : 0 },
-              { label: 'Issues / Maintenance',    color: 'bg-red-500',     count: maintenance, pct: tankers.length ? Math.round(maintenance / tankers.length * 100) : 0 },
+              { label: 'On Time (Active)', color: 'bg-emerald-500', count: active, pct: tankers.length ? Math.round(active / tankers.length * 100) : 0 },
+              { label: 'Loading / En Route', color: 'bg-orange-400', count: loading_, pct: tankers.length ? Math.round(loading_ / tankers.length * 100) : 0 },
+              { label: 'Issues / Maintenance', color: 'bg-red-500', count: maintenance, pct: tankers.length ? Math.round(maintenance / tankers.length * 100) : 0 },
             ].map(row => (
               <div key={row.label}>
                 <div className="flex items-center justify-between mb-2">
@@ -184,9 +204,8 @@ export default function TrackingPage() {
               return (
                 <div
                   key={i}
-                  className={`p-3 rounded-2xl transition-colors cursor-pointer group mb-2 ${
-                    isAlert ? 'bg-red-50/50 border border-red-100 hover:bg-red-50' : 'hover:bg-slate-50'
-                  }`}
+                  className={`p-3 rounded-2xl transition-colors cursor-pointer group mb-2 ${isAlert ? 'bg-red-50/50 border border-red-100 hover:bg-red-50' : 'hover:bg-slate-50'
+                    }`}
                 >
                   <div className="flex items-start gap-4">
                     <div className={`w-10 h-10 rounded-xl ${s.bg} ${s.cls} flex items-center justify-center flex-shrink-0 ${isAlert ? 'shadow-sm' : 'group-hover:bg-white group-hover:shadow-sm'} border border-transparent group-hover:border-slate-100 transition-all`}>
