@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Minus, Layers, Satellite, Map as MapIcon, Navigation } from 'lucide-react';
+import { loadMapsScript } from '@/lib/maps-loader';
 
 // ── Fallback depot (Nagpur district HQ) ───────────────────────────────────────
 const FALLBACK_DEPOT = { lat: 20.4514, lng: 79.0053 };
@@ -159,28 +160,7 @@ function villageInfoHtml(
     </div>`;
 }
 
-// ── Script loading singleton ──────────────────────────────────────────────────
-let mapsScriptReady = false;
-const mapsReadyCallbacks: Array<() => void> = [];
 
-function loadMapsScript(apiKey: string, cb: () => void) {
-    if (mapsScriptReady) { cb(); return; }
-    mapsReadyCallbacks.push(cb);
-    if (document.querySelector('script[data-maps]')) return;
-    const s = document.createElement('script');
-    s.setAttribute('data-maps', '1');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
-    s.async = true;
-    s.defer = true;
-    s.onload = () => {
-        mapsScriptReady = true;
-        mapsReadyCallbacks.forEach((f) => f());
-        mapsReadyCallbacks.length = 0;
-    };
-    document.head.appendChild(s);
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
 interface LiveMapProps { apiKey: string }
 
 type RouteInfo = { eta: string; distance: string };

@@ -8,11 +8,11 @@ function Skeleton({ className = '' }: { className?: string }) {
 }
 
 const roleStyle: Record<string, string> = {
-  admin:         'bg-blue-50 text-blue-700 border-blue-100',
-  dwo:           'bg-blue-50 text-blue-700 border-blue-100',
+  admin: 'bg-blue-50 text-blue-700 border-blue-100',
+  dwo: 'bg-blue-50 text-blue-700 border-blue-100',
   block_manager: 'bg-slate-100 text-slate-700 border-slate-200',
-  operator:      'bg-orange-50 text-orange-700 border-orange-100',
-  viewer:        'bg-slate-100 text-slate-500 border-slate-200',
+  operator: 'bg-orange-50 text-orange-700 border-orange-100',
+  viewer: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 const roleLabel: Record<string, string> = {
@@ -23,7 +23,7 @@ function timeAgo(dateStr: string | null) {
   if (!dateStr) return 'Never';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.round(diff / 60000);
-  if (mins < 2)  return 'Just now';
+  if (mins < 2) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -35,14 +35,14 @@ function initials(name: string) {
 }
 
 export default function UsersPage() {
-  const [users,    setUsers]    = useState<User[]>([]);
-  const [total,    setTotal]    = useState(0);
-  const [page,     setPage]     = useState(1);
-  const [pages,    setPages]    = useState(1);
-  const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState('');
-  const [showAdd,  setShowAdd]  = useState(false);
-  const [adding,   setAdding]   = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [adding, setAdding] = useState(false);
 
   // Add User form state
   const [form, setForm] = useState({ name: '', email: '', role: 'viewer', region: '', phone: '' });
@@ -55,7 +55,7 @@ export default function UsersPage() {
       setUsers(res.users);
       setTotal(res.total);
       setPages(res.pages);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn('[Users] Backend unavailable:', e); }
     finally { setLoading(false); }
   }
 

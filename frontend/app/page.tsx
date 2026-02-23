@@ -1,8 +1,12 @@
-'use client'
+'use client';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { TrendingUp, Map as MapIcon, AlertTriangle, Truck, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { api, type District, type Tanker, riskColor, riskBg, riskVwsiPercent } from '@/lib/api';
+
+const DistrictMap = dynamic(() => import('@/components/DistrictMap'), { ssr: false });
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 const COLORS = ['#10B981', '#EF4444'];
 
@@ -11,10 +15,10 @@ function Skeleton({ className = '' }: { className?: string }) {
 }
 
 export default function Dashboard() {
-  const [districts, setDistricts]   = useState<District[]>([]);
-  const [tankers,   setTankers]     = useState<Tanker[]>([]);
-  const [history,   setHistory]     = useState<{ name: string; value: number }[]>([]);
-  const [loading,   setLoading]     = useState(true);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [tankers, setTankers] = useState<Tanker[]>([]);
+  const [history, setHistory] = useState<{ name: string; value: number }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -35,29 +39,29 @@ export default function Dashboard() {
             value: parseFloat(h.vwsi.toFixed(3)),
           })));
         }
-      } catch (e) { console.error(e); }
-      finally     { setLoading(false); }
+      } catch (e) { console.warn('[Dashboard] Backend unavailable:', e); }
+      finally { setLoading(false); }
     }
     load();
   }, []);
 
   // Aggregates
-  const avgVWSI     = districts.length ? (districts.reduce((s, d) => s + d.vwsi, 0) / districts.length) : 0;
+  const avgVWSI = districts.length ? (districts.reduce((s, d) => s + d.vwsi, 0) / districts.length) : 0;
   const totalStress = districts.reduce((s, d) => s + d.villages_under_stress, 0);
   const activeTankers = tankers.filter(t => t.status === 'active').length;
   const loadingTankers = tankers.filter(t => t.status === 'loading').length;
   const criticalAlerts = districts.filter(d => d.risk_level === 'CRITICAL');
-  const topDistrict   = districts.reduce((a, b) => a.vwsi > b.vwsi ? a : b, districts[0]);
+  const topDistrict = districts.reduce((a, b) => a.vwsi > b.vwsi ? a : b, districts[0]);
   const allocationData = [
     { name: 'Allocated', value: activeTankers },
-    { name: 'Pending',   value: tankers.length - activeTankers },
+    { name: 'Pending', value: tankers.length - activeTankers },
   ];
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-8">
         <div className="xl:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-32 rounded-[24px]" />)}
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-[24px]" />)}
         </div>
         <div className="xl:col-span-8 flex flex-col gap-6">
           <Skeleton className="h-[420px] rounded-[24px]" />
@@ -139,7 +143,27 @@ export default function Dashboard() {
             <h2 className="text-lg font-bold text-slate-800">District Risk Overview</h2>
             <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-lg">Live · {new Date().toLocaleTimeString()}</span>
           </div>
-          <div className="space-y-3">
+
+          {/* Interactive risk map */}
+          <div className="mb-4 rounded-xl overflow-hidden border border-slate-100">
+            <DistrictMap apiKey={GOOGLE_MAPS_API_KEY} districts={districts} height="280px" />
+          </div>
+
+          {/* Legend */}
+          <div className="flex gap-4 mb-4 flex-wrap">
+            {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map(level => (
+              <div key={level} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full ${level === 'CRITICAL' ? 'bg-red-500' :
+                    level === 'HIGH' ? 'bg-orange-400' :
+                      level === 'MEDIUM' ? 'bg-yellow-400' : 'bg-emerald-500'
+                  }`} />
+                <span className="text-[11px] text-slate-500 font-medium">{level}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Scrollable district list */}
+          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
             {districts.sort((a, b) => b.vwsi - a.vwsi).map(d => (
               <div key={d.id} className="flex items-center gap-4 group hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors">
                 <div className="w-32 min-w-[8rem]">
@@ -149,11 +173,10 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        d.risk_level === 'CRITICAL' ? 'bg-red-500' :
-                        d.risk_level === 'HIGH'     ? 'bg-orange-500' :
-                        d.risk_level === 'MEDIUM'   ? 'bg-yellow-500' : 'bg-emerald-500'
-                      }`}
+                      className={`h-full rounded-full transition-all duration-700 ${d.risk_level === 'CRITICAL' ? 'bg-red-500' :
+                        d.risk_level === 'HIGH' ? 'bg-orange-500' :
+                          d.risk_level === 'MEDIUM' ? 'bg-yellow-500' : 'bg-emerald-500'
+                        }`}
                       style={{ width: `${riskVwsiPercent(d.vwsi)}%` }}
                     />
                   </div>
@@ -216,7 +239,7 @@ export default function Dashboard() {
           </div>
           <div className="space-y-3 mt-4">
             {[{ label: 'Active', color: 'bg-emerald-500', val: activeTankers },
-              { label: 'Idle / Loading', color: 'bg-red-500', val: tankers.length - activeTankers }].map(item => (
+            { label: 'Idle / Loading', color: 'bg-red-500', val: tankers.length - activeTankers }].map(item => (
               <div key={item.label} className="flex justify-between items-center text-sm">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${item.color}`} />
