@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react';
 import { Shield, Sliders, Bell, Database, Users, Settings as SettingsIcon, Save } from 'lucide-react';
+import Image from 'next/image';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('thresholds');
@@ -147,7 +148,7 @@ export default function SettingsPage() {
                   <tr>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        <img src="https://picsum.photos/seed/user1/40/40" alt="User" className="w-8 h-8 rounded-full" />
+                        <Image src="https://picsum.photos/seed/user1/40/40" alt="User" className="w-8 h-8 rounded-full" />
                         <div>
                           <p className="text-sm font-bold text-slate-800">Rajesh Kumar</p>
                           <p className="text-[10px] text-slate-500">rajesh.k@gov.in</p>
@@ -162,7 +163,7 @@ export default function SettingsPage() {
                   <tr>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        <img src="https://picsum.photos/seed/user2/40/40" alt="User" className="w-8 h-8 rounded-full" />
+                        <Image src="https://picsum.photos/seed/user2/40/40" alt="User" className="w-8 h-8 rounded-full" />
                         <div>
                           <p className="text-sm font-bold text-slate-800">Priya Sharma</p>
                           <p className="text-[10px] text-slate-500">priya.s@gov.in</p>
@@ -177,7 +178,7 @@ export default function SettingsPage() {
                   <tr>
                     <td className="py-4">
                       <div className="flex items-center gap-3">
-                        <img src="https://picsum.photos/seed/user3/40/40" alt="User" className="w-8 h-8 rounded-full" />
+                        <Image src="https://picsum.photos/seed/user3/40/40" alt="User" className="w-8 h-8 rounded-full" />
                         <div>
                           <p className="text-sm font-bold text-slate-800">Amit Patel</p>
                           <p className="text-[10px] text-slate-500">amit.p@gov.in</p>
