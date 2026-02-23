@@ -1,4 +1,0 @@
-  File "<string>", line 6
-    print(f'  status:       {data[\
-                                 ^
-SyntaxError: '[' was never closed
