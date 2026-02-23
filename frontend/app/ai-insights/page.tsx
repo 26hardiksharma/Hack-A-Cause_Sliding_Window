@@ -20,19 +20,19 @@ interface Insights {
 
 const urgencyStyle: Record<Urgency, string> = {
   critical: 'bg-red-50 border-red-200 text-red-700',
-  high:     'bg-orange-50 border-orange-200 text-orange-700',
-  medium:   'bg-yellow-50 border-yellow-200 text-yellow-700',
+  high: 'bg-orange-50 border-orange-200 text-orange-700',
+  medium: 'bg-yellow-50 border-yellow-200 text-yellow-700',
 };
 const severityDot: Record<Severity, string> = {
   high: 'bg-red-500', medium: 'bg-yellow-500', low: 'bg-emerald-500',
 };
 
 export default function AIInsights() {
-  const [insights,   setInsights]   = useState<Insights | null>(null);
-  const [chartData,  setChartData]  = useState<{ day: string; predicted: number; historical: number }[]>([]);
-  const [loading,    setLoading]    = useState(true);
+  const [insights, setInsights] = useState<Insights | null>(null);
+  const [chartData, setChartData] = useState<{ day: string; predicted: number; historical: number }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [copied,     setCopied]     = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function loadInsights(refresh = false) {
     try {
@@ -40,7 +40,7 @@ export default function AIInsights() {
 
       const [dRes, tRes] = await Promise.all([api.districts.list(), api.tankers.list()]);
       const districts: District[] = dRes.districts;
-      const tankers: Tanker[]    = tRes;
+      const tankers: Tanker[] = tRes;
 
       // Call Groq AI
       const ai = await fetch('/api/ai', {
@@ -57,21 +57,21 @@ export default function AIInsights() {
         const history = await api.districts.history(topDistrict.id, 14);
         const baseVwsi = topDistrict.vwsi;
         const peakVwsi = ai.forecast?.peak_vwsi ?? baseVwsi + 0.12;
-        const peakDay  = ai.forecast?.peak_day ?? 25;
+        const peakDay = ai.forecast?.peak_day ?? 25;
 
         // Combine historical + forecast
         const combined: typeof chartData = [];
         history.history.forEach((h, i) => {
-          combined.push({ day: `D-${14-i}`, predicted: NaN, historical: h.vwsi });
+          combined.push({ day: `D-${14 - i}`, predicted: NaN, historical: h.vwsi });
         });
         for (let d = 1; d <= 16; d++) {
-          const frac     = d / peakDay;
+          const frac = d / peakDay;
           const projected = baseVwsi + (peakVwsi - baseVwsi) * Math.sin(frac * Math.PI / 2);
           combined.push({ day: `+${d}`, predicted: parseFloat(projected.toFixed(3)), historical: NaN });
         }
         setChartData(combined);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.warn('[AI Insights] Backend unavailable:', e); }
     finally { setLoading(false); setRefreshing(false); }
   }
 
@@ -109,7 +109,7 @@ export default function AIInsights() {
             <div>
               <h1 className="text-2xl font-bold">AI Drought Intelligence</h1>
               <p className="text-violet-200 text-sm mt-0.5">
-                Powered by Groq · {insights?.source === 'groq' ? insights.model : 'Heuristic Fallback'} · {Math.round((insights?.model_confidence ?? 0.85) * 100)}% confidence
+                Powered by Groq · {insights?.source === 'groq' ? 'LLM Analysis' : 'Heuristic Fallback'} · {Math.round((insights?.model_confidence ?? 0.85) * 100)}% confidence
               </p>
             </div>
           </div>
@@ -140,11 +140,10 @@ export default function AIInsights() {
             </p>
           </div>
           {insights?.forecast?.trend && (
-            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
-              insights.forecast.trend === 'increasing' ? 'bg-red-50 text-red-600' :
+            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${insights.forecast.trend === 'increasing' ? 'bg-red-50 text-red-600' :
               insights.forecast.trend === 'decreasing' ? 'bg-emerald-50 text-emerald-600' :
-              'bg-yellow-50 text-yellow-600'
-            }`}>
+                'bg-yellow-50 text-yellow-600'
+              }`}>
               <TrendingUp className="inline w-3 h-3 mr-1" />
               {insights.forecast.trend}
             </span>
@@ -155,11 +154,11 @@ export default function AIInsights() {
             <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="predicted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.3} />
+                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="historical" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#94a3b8" stopOpacity={0.2} />
+                  <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.2} />
                   <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -168,7 +167,7 @@ export default function AIInsights() {
               <YAxis domain={[0, 1]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(v) => typeof v === 'number' && !isNaN(v) ? v.toFixed(3) : '-'} />
               <Area type="monotone" dataKey="historical" stroke="#94a3b8" fill="url(#historical)" strokeWidth={2} dot={false} connectNulls={false} name="Historical" />
-              <Area type="monotone" dataKey="predicted"  stroke="#7c3aed" fill="url(#predicted)"  strokeWidth={2} dot={false} connectNulls={false} name="Predicted"  />
+              <Area type="monotone" dataKey="predicted" stroke="#7c3aed" fill="url(#predicted)" strokeWidth={2} dot={false} connectNulls={false} name="Predicted" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

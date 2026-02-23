@@ -12,8 +12,8 @@ function Skeleton({ className = '' }: { className?: string }) {
 
 export default function AnalyticsPage() {
   const [districts, setDistricts] = useState<District[]>([]);
-  const [tankers,   setTankers]   = useState<Tanker[]>([]);
-  const [loading,   setLoading]   = useState(true);
+  const [tankers, setTankers] = useState<Tanker[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([api.districts.list(), api.tankers.list()])
@@ -21,7 +21,7 @@ export default function AnalyticsPage() {
         setDistricts(dRes.districts);
         setTankers(tRes);
       })
-      .catch(console.error)
+      .catch((e) => console.warn('[Analytics] Backend unavailable:', e))
       .finally(() => setLoading(false));
   }, []);
 
@@ -38,12 +38,12 @@ export default function AnalyticsPage() {
   });
 
   // Resource utilization from real data
-  const active     = tankers.filter(t => t.status === 'active').length;
+  const active = tankers.filter(t => t.status === 'active').length;
   const efficiency = tankers.length ? Math.round((active / tankers.length) * 100) : 85;
   const utilizationData = [
-    { name: 'Tankers',   value: efficiency },
-    { name: 'Coverage',  value: Math.round(70 + avgVwsi * 15) },
-    { name: 'Manpower',  value: 70 },
+    { name: 'Tankers', value: efficiency },
+    { name: 'Coverage', value: Math.round(70 + avgVwsi * 15) },
+    { name: 'Manpower', value: 70 },
   ];
 
   const avgUtil = Math.round(utilizationData.reduce((s, u) => s + u.value, 0) / utilizationData.length);
@@ -53,15 +53,15 @@ export default function AnalyticsPage() {
 
   const riskLevelStyle: Record<string, string> = {
     CRITICAL: 'text-red-600',
-    HIGH:     'text-orange-500',
-    MEDIUM:   'text-yellow-500',
-    LOW:      'text-emerald-500',
+    HIGH: 'text-orange-500',
+    MEDIUM: 'text-yellow-500',
+    LOW: 'text-emerald-500',
   };
   const riskBarStyle: Record<string, string> = {
     CRITICAL: 'bg-red-500',
-    HIGH:     'bg-orange-500',
-    MEDIUM:   'bg-yellow-500',
-    LOW:      'bg-emerald-500',
+    HIGH: 'bg-orange-500',
+    MEDIUM: 'bg-yellow-500',
+    LOW: 'bg-emerald-500',
   };
 
   return (
