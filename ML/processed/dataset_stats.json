@@ -1,0 +1,27 @@
+{
+  "total_sequences": 26800,
+  "window_size": 30,
+  "n_features": 8,
+  "feature_names": [
+    "rainfall_mm",
+    "rain_7d",
+    "rain_30d",
+    "temp_max_c",
+    "humidity_pct",
+    "gw_depth_m",
+    "availability_frac",
+    "spi_approx"
+  ],
+  "n_villages": 80,
+  "class_balance": {
+    "drought_1": 12060,
+    "no_drought_0": 14740,
+    "pct_drought": 45.0
+  },
+  "splits": {
+    "train": 21440,
+    "val": 2680,
+    "test": 2680
+  },
+  "scaler": "MinMaxScaler(0,1) fitted on train only"
+}

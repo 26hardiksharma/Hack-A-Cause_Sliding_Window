@@ -1,193 +1,260 @@
 'use client'
-import { Sparkles, TrendingUp, CloudRain, Droplets, Thermometer, AlertTriangle, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { useEffect, useState } from 'react';
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, Zap, Loader2, RefreshCcw, Copy } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { api, type District, type Tanker } from '@/lib/api';
 
-const forecastData = [
-  { name: '1 May', value: 0.45, historical: 0.40 },
-  { name: '5 May', value: 0.48, historical: 0.42 },
-  { name: '10 May', value: 0.52, historical: 0.43 },
-  { name: '15 May', value: 0.58, historical: 0.45 },
-  { name: '20 May', value: 0.65, historical: 0.48 },
-  { name: '25 May', value: 0.72, historical: 0.50 },
-  { name: '30 May', value: 0.78, historical: 0.52 },
-];
+type Urgency = 'critical' | 'high' | 'medium';
+type Severity = 'high' | 'medium' | 'low';
 
-export default function AIInsightsPage() {
+interface Insights {
+  source: string;
+  summary: string;
+  risk_factors: { name: string; value: string; severity: Severity; detail: string }[];
+  forecast: { trend: string; peak_day: number; peak_vwsi: number; narrative: string };
+  recommendations: { title: string; detail: string; action: string; urgency: Urgency; tankers_required: number }[];
+  sms_template: string;
+  critical_districts: string[];
+  model_confidence: number;
+}
+
+const urgencyStyle: Record<Urgency, string> = {
+  critical: 'bg-red-50 border-red-200 text-red-700',
+  high:     'bg-orange-50 border-orange-200 text-orange-700',
+  medium:   'bg-yellow-50 border-yellow-200 text-yellow-700',
+};
+const severityDot: Record<Severity, string> = {
+  high: 'bg-red-500', medium: 'bg-yellow-500', low: 'bg-emerald-500',
+};
+
+export default function AIInsights() {
+  const [insights,   setInsights]   = useState<Insights | null>(null);
+  const [chartData,  setChartData]  = useState<{ day: string; predicted: number; historical: number }[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [copied,     setCopied]     = useState(false);
+
+  async function loadInsights(refresh = false) {
+    try {
+      if (refresh) setRefreshing(true); else setLoading(true);
+
+      const [dRes, tRes] = await Promise.all([api.districts.list(), api.tankers.list()]);
+      const districts: District[] = dRes.districts;
+      const tankers: Tanker[]    = tRes;
+
+      // Call Groq AI
+      const ai = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ districts, tankers }),
+      }).then(r => r.json());
+
+      setInsights(ai);
+
+      // Build 30-day forecast chart using top district history + AI peak projection
+      const topDistrict = districts.reduce((a, b) => a.vwsi > b.vwsi ? a : b, districts[0]);
+      if (topDistrict) {
+        const history = await api.districts.history(topDistrict.id, 14);
+        const baseVwsi = topDistrict.vwsi;
+        const peakVwsi = ai.forecast?.peak_vwsi ?? baseVwsi + 0.12;
+        const peakDay  = ai.forecast?.peak_day ?? 25;
+
+        // Combine historical + forecast
+        const combined: typeof chartData = [];
+        history.history.forEach((h, i) => {
+          combined.push({ day: `D-${14-i}`, predicted: NaN, historical: h.vwsi });
+        });
+        for (let d = 1; d <= 16; d++) {
+          const frac     = d / peakDay;
+          const projected = baseVwsi + (peakVwsi - baseVwsi) * Math.sin(frac * Math.PI / 2);
+          combined.push({ day: `+${d}`, predicted: parseFloat(projected.toFixed(3)), historical: NaN });
+        }
+        setChartData(combined);
+      }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); setRefreshing(false); }
+  }
+
+  useEffect(() => { loadInsights(); }, []);
+
+  function copyTemplate() {
+    if (insights?.sms_template) {
+      navigator.clipboard.writeText(insights.sms_template);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg">
+          <Brain className="w-8 h-8 text-white animate-pulse" />
+        </div>
+        <p className="text-sm text-slate-500">Analyzing drought risk with Groq AI…</p>
+        <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-12 gap-6 h-full pb-8">
-      {/* Left Column - Forecast & Factors */}
-      <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-        {/* Forecast Chart */}
-        <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
-          <div className="flex justify-between items-start mb-6">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pb-8">
+      {/* Header */}
+      <div className="xl:col-span-12 bg-gradient-to-r from-violet-600 to-purple-700 rounded-[24px] shadow-lg p-6 text-white">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-                Drought Risk Forecast (30 Days)
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">Predicted VWSI based on current trends and historical data.</p>
-            </div>
-            <div className="flex gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
-                Predicted
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
-                Historical Avg
-              </span>
+              <h1 className="text-2xl font-bold">AI Drought Intelligence</h1>
+              <p className="text-violet-200 text-sm mt-0.5">
+                Powered by Groq · {insights?.source === 'groq' ? insights.model : 'Heuristic Fallback'} · {Math.round((insights?.model_confidence ?? 0.85) * 100)}% confidence
+              </p>
             </div>
           </div>
-          
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={forecastData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                  labelStyle={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}
-                />
-                <ReferenceLine y={0.6} stroke="#ef4444" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'Critical Threshold', fill: '#ef4444', fontSize: 10, fontWeight: 'bold' }} />
-                <Area type="monotone" dataKey="historical" stroke="#cbd5e1" strokeWidth={2} fill="none" strokeDasharray="5 5" />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <button
+            onClick={() => loadInsights(true)}
+            disabled={refreshing}
+            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 transition-colors px-4 py-2 rounded-xl text-sm font-medium"
+          >
+            {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+            Re-analyze
+          </button>
         </div>
 
-        {/* Risk Factors */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <CloudRain className="w-5 h-5" />
-              </div>
-              <span className="text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> High Risk
-              </span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-500 mb-1">Rainfall Deficit</h3>
-            <p className="text-2xl font-bold text-slate-800">-42% <span className="text-sm font-normal text-slate-400">vs normal</span></p>
-            <p className="text-xs text-slate-500 mt-3">Monsoon delayed by 14 days in eastern talukas.</p>
+        {insights?.summary && (
+          <div className="mt-4 bg-white/10 rounded-xl p-4 text-sm leading-relaxed text-white/90">
+            {insights.summary}
           </div>
+        )}
+      </div>
 
-          <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
-                <Droplets className="w-5 h-5" />
-              </div>
-              <span className="text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> Med Risk
-              </span>
-            </div>
-            <h3 className="text-sm font-medium text-slate-500 mb-1">Soil Moisture</h3>
-            <p className="text-2xl font-bold text-slate-800">18% <span className="text-sm font-normal text-slate-400">avg</span></p>
-            <p className="text-xs text-slate-500 mt-3">Rapid depletion in topsoil across 45 villages.</p>
+      {/* Forecast Chart */}
+      <div className="xl:col-span-8 bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">30-Day VWSI Forecast</h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Historical (grey) + AI Prediction (purple) · Peak at Day {insights?.forecast?.peak_day}
+            </p>
           </div>
+          {insights?.forecast?.trend && (
+            <span className={`text-xs font-bold px-2 py-1 rounded-lg ${
+              insights.forecast.trend === 'increasing' ? 'bg-red-50 text-red-600' :
+              insights.forecast.trend === 'decreasing' ? 'bg-emerald-50 text-emerald-600' :
+              'bg-yellow-50 text-yellow-600'
+            }`}>
+              <TrendingUp className="inline w-3 h-3 mr-1" />
+              {insights.forecast.trend}
+            </span>
+          )}
+        </div>
+        <div className="h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="predicted" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="historical" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#94a3b8" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={2} />
+              <YAxis domain={[0, 1]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(v) => typeof v === 'number' && !isNaN(v) ? v.toFixed(3) : '-'} />
+              <Area type="monotone" dataKey="historical" stroke="#94a3b8" fill="url(#historical)" strokeWidth={2} dot={false} connectNulls={false} name="Historical" />
+              <Area type="monotone" dataKey="predicted"  stroke="#7c3aed" fill="url(#predicted)"  strokeWidth={2} dot={false} connectNulls={false} name="Predicted"  />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        {insights?.forecast?.narrative && (
+          <p className="text-xs text-slate-500 mt-3 leading-relaxed border-t border-slate-50 pt-3">{insights.forecast.narrative}</p>
+        )}
+      </div>
 
-          <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-2 bg-red-50 text-red-600 rounded-lg">
-                <Thermometer className="w-5 h-5" />
+      {/* Risk Factors */}
+      <div className="xl:col-span-4 bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
+        <h2 className="text-lg font-bold text-slate-800 mb-5">Key Risk Factors</h2>
+        <div className="flex flex-col gap-4">
+          {insights?.risk_factors?.map((rf, i) => (
+            <div key={i} className="flex gap-3 bg-slate-50 rounded-xl p-4">
+              <div className={`w-2 h-full rounded-full min-h-[40px] ${severityDot[rf.severity]}`} />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm font-bold text-slate-700">{rf.name}</p>
+                  <span className="text-xs font-mono font-bold text-slate-500">{rf.value}</span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">{rf.detail}</p>
               </div>
-              <span className="text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded text-xs flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" /> High Risk
-              </span>
             </div>
-            <h3 className="text-sm font-medium text-slate-500 mb-1">Temp Anomaly</h3>
-            <p className="text-2xl font-bold text-slate-800">+2.4°C <span className="text-sm font-normal text-slate-400">avg</span></p>
-            <p className="text-xs text-slate-500 mt-3">Prolonged heatwave expected next week.</p>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Right Column - Recommendations */}
-      <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-        <div className="bg-white rounded-[24px] shadow-sm p-6 border border-slate-100 flex-1 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-blue-600" />
-              AI Recommendations
-            </h3>
-            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">3 Actions</span>
-          </div>
-          
-          <div className="space-y-4 flex-1">
-            {/* Rec 1 */}
-            <div className="p-4 rounded-2xl border border-red-100 bg-red-50/30 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-              <div className="flex gap-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">Increase Tanker Allocation</h4>
-                  <p className="text-xs text-slate-600 mt-1">Khamgaon and Selu clusters are predicted to cross critical VWSI threshold (0.6) in 5 days.</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-3 border border-red-100 flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-700">+4 Tankers required</span>
-                <button className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors">
-                  Approve Allocation
-                </button>
-              </div>
-            </div>
-
-            {/* Rec 2 */}
-            <div className="p-4 rounded-2xl border border-orange-100 bg-orange-50/30 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
-              <div className="flex gap-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0">
-                  <CloudRain className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">Send Conservation Advisory</h4>
-                  <p className="text-xs text-slate-600 mt-1">Heatwave predicted. Advise farmers in eastern talukas to delay sowing by 1 week.</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-3 border border-orange-100 flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-700">Target: 12,400 Farmers</span>
-                <button className="text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors">
-                  Draft SMS
-                </button>
-              </div>
-            </div>
-
-            {/* Rec 3 */}
-            <div className="p-4 rounded-2xl border border-blue-100 bg-blue-50/30 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-              <div className="flex gap-3 mb-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-                  <Droplets className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800">Prepare Emergency Reservoir</h4>
-                  <p className="text-xs text-slate-600 mt-1">Current depletion rate suggests primary reservoir will hit dead storage in 18 days.</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-3 border border-blue-100 flex justify-between items-center">
-                <span className="text-xs font-medium text-slate-700">Action: Start pumping</span>
-                <button className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-                  View Plan <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-xs text-slate-400">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            Last updated 10 mins ago
-          </div>
+      {/* Recommendations */}
+      <div className="xl:col-span-8 bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
+        <div className="flex items-center gap-2 mb-5">
+          <Zap className="w-5 h-5 text-violet-600" />
+          <h2 className="text-lg font-bold text-slate-800">AI Recommendations</h2>
         </div>
+        <div className="flex flex-col gap-4">
+          {insights?.recommendations?.map((rec, i) => (
+            <div key={i} className={`border rounded-xl p-4 ${urgencyStyle[rec.urgency]}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-3">
+                  {rec.urgency === 'critical' ? (
+                    <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-sm font-bold">{rec.title}</p>
+                    <p className="text-xs mt-1 leading-relaxed opacity-80">{rec.detail}</p>
+                    {rec.tankers_required > 0 && (
+                      <p className="text-xs mt-1 font-medium opacity-70">🚛 {rec.tankers_required} tankers required</p>
+                    )}
+                  </div>
+                </div>
+                <button className="text-xs font-bold border border-current rounded-lg px-3 py-1 whitespace-nowrap hover:bg-white/50 transition-colors">
+                  {rec.action}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SMS Template */}
+      <div className="xl:col-span-4 bg-white rounded-[24px] shadow-sm p-6 border border-slate-100">
+        <h2 className="text-lg font-bold text-slate-800 mb-2">AI SMS Template</h2>
+        <p className="text-xs text-slate-400 mb-4">Auto-generated for most critical district</p>
+        <div className="bg-slate-50 rounded-xl p-4 font-mono text-xs leading-relaxed text-slate-700 border border-slate-100 min-h-[80px]">
+          {insights?.sms_template}
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={copyTemplate}
+            className="flex-1 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold py-2.5 rounded-xl transition-colors"
+          >
+            <Copy className="w-4 h-4" />
+            {copied ? 'Copied!' : 'Copy Template'}
+          </button>
+        </div>
+        {insights?.critical_districts && insights.critical_districts.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-medium text-slate-500 mb-2">Critical Districts</p>
+            <div className="flex flex-wrap gap-2">
+              {insights.critical_districts.map(d => (
+                <span key={d} className="text-xs bg-red-50 text-red-600 font-bold px-2 py-1 rounded-lg">{d}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

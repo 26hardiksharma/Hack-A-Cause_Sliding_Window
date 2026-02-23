@@ -149,4 +149,8 @@ Reply "DONE" → Confirms water received
 
 Phase 2 (1M): Real IMD rainfall API integration
 Phase 3 (6M): Govt dashboard + IoT sensors
+<<<<<<< Updated upstream
 Phase 4 (12M): Nationwide rollout (500+ districts)
+=======
+Phase 4 (12M): Nationwide rollout (500+ districts)
+>>>>>>> Stashed changes
