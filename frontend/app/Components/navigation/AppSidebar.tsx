@@ -11,11 +11,13 @@ import {
   BarChart3,
   Sparkles,
   Bell,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/app/Components/auth/AuthContext";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -30,6 +32,18 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  // Derive display name and role label from auth state, fall back to placeholder
+  const displayName = user?.name ?? "Rajesh Patil";
+  const roleLabel =
+    user?.role === "admin"
+      ? "Administrator"
+      : user?.role === "official"
+      ? "District Water Officer"
+      : user?.role === "user"
+      ? "Field User"
+      : "District Water Officer";
 
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col z-20 shadow-sm hidden md:flex h-full">
@@ -93,21 +107,25 @@ export function AppSidebar() {
 
       {/* Profile Footer */}
       <div className="p-4">
-        <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors">
+        <div className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors">
           <Image
             alt="Profile"
-            className="w-9 h-9 rounded-full object-cover"
+            className="w-9 h-9 rounded-full object-cover flex-shrink-0"
             src="https://picsum.photos/seed/user/100/100"
             width={36}
             height={36}
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-700 truncate">Rajesh Patil</p>
-            <p className="text-xs text-slate-500 truncate">District Water Officer</p>
+            <p className="text-sm font-semibold text-slate-700 truncate">{displayName}</p>
+            <p className="text-xs text-slate-500 truncate">{roleLabel}</p>
           </div>
-          <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <button
+            onClick={logout}
+            title="Sign out"
+            className="flex-shrink-0 text-slate-400 hover:text-red-500 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>

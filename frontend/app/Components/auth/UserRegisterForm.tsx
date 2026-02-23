@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import { api } from "@/lib/api";
 
 const DISTRICTS = [
   "North District",
@@ -18,7 +20,41 @@ const DISTRICTS = [
 ];
 
 export function UserRegisterForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [officialId, setOfficialId] = useState("");
+  const [district, setDistrict] = useState("");
+  const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agreedToTerms) {
+      setError("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    setIsLoading(true);
+    try {
+      const res = await api.auth.userRegister({
+        full_name: fullName,
+        official_id: officialId,
+        district,
+        password,
+      });
+      setSuccess(res.message || "Account created. You can now sign in.");
+      setTimeout(() => router.push("/user-login"), 2500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <main className="bg-white font-sans text-slate-900 antialiased min-h-screen flex flex-col lg:flex-row overflow-hidden absolute inset-0 z-50">
@@ -113,7 +149,19 @@ export function UserRegisterForm() {
           </div>
 
           {/* Form */}
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {/* Error / Success feedback */}
+            {error && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3">
+                {success}
+              </div>
+            )}
+
             {/* Full Name */}
             <div className="space-y-1.5">
               <label
@@ -143,6 +191,9 @@ export function UserRegisterForm() {
                   id="reg-fullname"
                   type="text"
                   placeholder="e.g. Sarah Mitchell"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#135bec]/20 focus:border-[#135bec] bg-white transition-all text-sm"
                 />
               </div>
@@ -177,6 +228,9 @@ export function UserRegisterForm() {
                   id="reg-official-id"
                   type="text"
                   placeholder="GOV-ID-XXXX"
+                  required
+                  value={officialId}
+                  onChange={(e) => setOfficialId(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#135bec]/20 focus:border-[#135bec] bg-white transition-all text-sm"
                 />
               </div>
@@ -214,7 +268,9 @@ export function UserRegisterForm() {
                 </div>
                 <select
                   id="reg-district"
-                  defaultValue=""
+                  required
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
                   className="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#135bec]/20 focus:border-[#135bec] bg-white appearance-none transition-all text-sm"
                 >
                   <option disabled value="">
@@ -278,6 +334,10 @@ export function UserRegisterForm() {
                   id="reg-password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Min. 8 characters"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-10 pr-12 py-3 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#135bec]/20 focus:border-[#135bec] bg-white transition-all text-sm"
                 />
                 <button
@@ -301,6 +361,8 @@ export function UserRegisterForm() {
                   id="reg-terms"
                   name="terms"
                   type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 text-[#135bec] focus:ring-[#135bec]/20"
                 />
               </div>
@@ -329,9 +391,10 @@ export function UserRegisterForm() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-lg shadow-sm text-sm font-bold text-white bg-[#135bec] hover:bg-[#0d43b3] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#135bec] transition-all"
+              disabled={isLoading}
+              className="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-lg shadow-sm text-sm font-bold text-white bg-[#135bec] hover:bg-[#0d43b3] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#135bec] transition-all disabled:opacity-60"
             >
-              Register Account
+              {isLoading ? "Registering…" : "Register Account"}
             </button>
           </form>
 

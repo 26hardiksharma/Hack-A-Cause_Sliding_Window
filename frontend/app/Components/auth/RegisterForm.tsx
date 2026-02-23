@@ -1,15 +1,50 @@
 'use client';
+import { useState } from 'react';
 import {
   Droplets, User, Badge, ShieldCheck, Briefcase,
   Fingerprint, MapPin, Mail, ArrowRight, Shield,
   CheckCircle, Clock, HelpCircle, Phone,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { api } from '@/lib/api';
 
 export function RegisterForm() {
+  const router = useRouter();
+  const [fullName, setFullName] = useState('');
+  const [designation, setDesignation] = useState('');
+  const [deptId, setDeptId] = useState('');
+  const [district, setDistrict] = useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setIsLoading(true);
+    try {
+      const res = await api.auth.register({
+        full_name: fullName,
+        designation,
+        department_id: deptId,
+        district,
+        email,
+      });
+      setSuccess(res.message || 'Registration submitted. Await admin approval.');
+      setTimeout(() => router.push('/login'), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <div className="bg-[#f6f6f8] text-slate-900 font-sans min-h-screen flex flex-col w-full">
       {/* Header */}
@@ -69,8 +104,20 @@ export function RegisterForm() {
                 </div>
               </div>
 
+              {/* Feedback */}
+              {error && (
+                <div className="mb-6 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="mb-6 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3">
+                  {success}
+                </div>
+              )}
+
               {/* Form Fields */}
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Full Name */}
                   <div className="space-y-1.5">
@@ -79,7 +126,15 @@ export function RegisterForm() {
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Badge className="text-slate-400 w-5 h-5" />
                       </div>
-                      <Input id="fullname" placeholder="e.g. Rajesh Kumar" required type="text" className="pl-10 border-slate-300 focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec]" />
+                      <Input
+                        id="fullname"
+                        placeholder="e.g. Rajesh Kumar"
+                        required
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pl-10 border-slate-300 focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec]"
+                      />
                     </div>
                   </div>
 
@@ -92,7 +147,9 @@ export function RegisterForm() {
                       </div>
                       <select
                         id="designation"
-                        defaultValue=""
+                        required
+                        value={designation}
+                        onChange={(e) => setDesignation(e.target.value)}
                         className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec] sm:text-sm"
                       >
                         <option disabled value="">Select Designation</option>
@@ -111,7 +168,14 @@ export function RegisterForm() {
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Fingerprint className="text-slate-400 w-5 h-5" />
                       </div>
-                      <Input id="deptId" placeholder="e.g. WRD-2023-884" type="text" className="pl-10 border-slate-300 focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec]" />
+                      <Input
+                        id="deptId"
+                        placeholder="e.g. WRD-2023-884"
+                        type="text"
+                        value={deptId}
+                        onChange={(e) => setDeptId(e.target.value)}
+                        className="pl-10 border-slate-300 focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec]"
+                      />
                     </div>
                   </div>
 
@@ -124,7 +188,9 @@ export function RegisterForm() {
                       </div>
                       <select
                         id="district"
-                        defaultValue=""
+                        required
+                        value={district}
+                        onChange={(e) => setDistrict(e.target.value)}
                         className="block w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec] sm:text-sm"
                       >
                         <option disabled value="">Select District</option>
@@ -143,16 +209,34 @@ export function RegisterForm() {
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Mail className="text-slate-400 w-5 h-5" />
                       </div>
-                      <Input id="email" placeholder="e.g. name@department.gov.in" type="email" className="pl-10 border-slate-300 focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec]" />
+                      <Input
+                        id="email"
+                        placeholder="e.g. name@department.gov.in"
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 border-slate-300 focus:ring-2 focus:ring-[#135bec] focus:border-[#135bec]"
+                      />
                     </div>
                     <p className="text-xs text-slate-500">Please use your official .gov.in or .nic.in email address.</p>
                   </div>
                 </div>
 
                 <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <Button type="button" className="bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium">Cancel Request</Button>
-                  <Button type="button" className="w-full sm:w-auto bg-[#135bec] hover:bg-[#0e45b8] text-white text-base font-medium flex items-center gap-2">
-                    Continue to Credentials <ArrowRight className="w-4 h-4" />
+                  <Button
+                    type="button"
+                    onClick={() => router.push('/login')}
+                    className="bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium"
+                  >
+                    Cancel Request
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full sm:w-auto bg-[#135bec] hover:bg-[#0e45b8] text-white text-base font-medium flex items-center gap-2 disabled:opacity-60"
+                  >
+                    {isLoading ? 'Submitting…' : <>Continue to Credentials <ArrowRight className="w-4 h-4" /></>}
                   </Button>
                 </div>
               </form>
