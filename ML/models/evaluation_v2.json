@@ -1,0 +1,30 @@
+{
+  "accuracy": 0.9265,
+  "auc_roc": 0.9925,
+  "f1_score": 0.9237,
+  "precision": 0.8613,
+  "recall": 0.9958,
+  "threshold": 0.35,
+  "false_negatives": 5,
+  "true_positives": 1192,
+  "confusion_matrix": [
+    [
+      1291,
+      192
+    ],
+    [
+      5,
+      1192
+    ]
+  ],
+  "train_acc": 0.863,
+  "train_recall": 0.9893,
+  "overfit_acc_gap": 0.0635,
+  "overfit_recall_gap": 0.0065,
+  "prd_targets": {
+    "accuracy_target": 0.8,
+    "recall_target": 0.9,
+    "accuracy_met": true,
+    "recall_met": true
+  }
+}

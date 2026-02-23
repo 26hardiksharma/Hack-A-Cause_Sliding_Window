@@ -1,27 +1,33 @@
 {
+  "version": "v3-balanced-accuracy-recall",
   "total_sequences": 26800,
   "window_size": 30,
-  "n_features": 8,
+  "n_features": 12,
   "feature_names": [
     "rainfall_mm",
     "rain_7d",
     "rain_30d",
     "temp_max_c",
     "humidity_pct",
-    "gw_depth_m",
-    "availability_frac",
-    "spi_approx"
+    "rain_deficit_pct",
+    "drought_index",
+    "consecutive_dry_days",
+    "spi_30d",
+    "heat_stress",
+    "rain_trend_7d",
+    "rain_30d_vs_7d_ratio"
   ],
   "n_villages": 80,
+  "label_type": "dynamic drought_index >= 0.5 + boundary noise 0.06",
   "class_balance": {
-    "drought_1": 12060,
-    "no_drought_0": 14740,
-    "pct_drought": 45.0
+    "drought_1": 9488,
+    "no_drought_0": 17312,
+    "pct_drought": 35.4
   },
   "splits": {
     "train": 21440,
     "val": 2680,
     "test": 2680
   },
-  "scaler": "MinMaxScaler(0,1) fitted on train only"
+  "scaler": "RobustScaler (train-only fit)"
 }
