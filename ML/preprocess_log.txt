@@ -1,0 +1,12 @@
+[preprocess] Loading datasets...
+[preprocess] Building daily sequences for 80 villages...
+[preprocess] Total sequences: 26800  |  Shape: (26800, 30, 8)
+[preprocess] Train: 21440  |  Val: 2680  |  Test: 2680
+
+[preprocess] Done. Files saved to ML/processed/
+  X_train : (21440, 30, 8)  y_train : (21440,)
+  X_val   : (2680, 30, 8)    y_val   : (2680,)
+  X_test  : (2680, 30, 8)   y_test  : (2680,)
+  Class balance: 45.0% drought
+  Scaler  : saved to processed/scaler.pkl
+  Stats   : saved to processed/dataset_stats.json

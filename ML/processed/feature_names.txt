@@ -1,0 +1,8 @@
+rainfall_mm
+rain_7d
+rain_30d
+temp_max_c
+humidity_pct
+gw_depth_m
+availability_frac
+spi_approx

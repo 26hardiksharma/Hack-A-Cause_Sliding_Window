@@ -1,0 +1,99 @@
+--- 1. SHAPES ---
+villages:       (80, 15)
+rainfall:       (960, 11)  => 12 months x 80 villages
+groundwater:    (4160, 10)  => 52 weeks x 80 villages
+water_source:   (960, 16)  => 12 months x 80 villages
+
+--- 2. RAINFALL COLUMNS ---
+['rf_id', 'village_id', 'village_name', 'year', 'month', 'month_name', 'actual_rainfall_mm', 'normal_rainfall_mm', 'deviation', 'spi_approx', 'source']
+
+--- 3. GROUNDWATER COLUMNS ---
+['gw_id', 'village_id', 'village_name', 'date', 'week_number', 'depth_below_surface_m', 'trend', 'classification', 'source', 'confidence']
+
+--- 4. WATER SOURCE COLUMNS ---
+['ws_id', 'village_id', 'village_name', 'year', 'month', 'month_name', 'source_type', 'capacity_liters_per_day', 'supply_liters_per_day', 'availability_fraction', 'supply_hours_per_day', 'availability_status', 'treatment_facility', 'daily_demand_lpd', 'shortfall_lpd', 'source']
+
+--- 5. VILLAGES COLUMNS ---
+['village_id', 'village_name', 'block', 'district', 'state', 'latitude', 'longitude', 'population', 'households', 'sc_st_percentage', 'rural_urban', 'water_source_type', 'jjm_beneficiary', 'stress_tier', 'active']
+
+--- 6. RAINFALL STATS ---
+       actual_rainfall_mm  normal_rainfall_mm  deviation  spi_approx
+count             960.000             960.000    960.000     960.000
+mean               81.364             106.000     -0.233      -0.666
+std               112.244             136.677      0.224       0.639
+min                 3.300               7.900     -0.621      -1.774
+25%                 7.400              10.575     -0.409      -1.170
+50%                11.300              13.100     -0.242      -0.691
+75%               144.425             186.225     -0.061      -0.173
+max               448.000             374.100      0.207       0.591
+
+--- 7. GROUNDWATER STATS ---
+       depth_below_surface_m
+count               4160.000
+mean                  56.532
+std                   32.145
+min                   12.370
+25%                   30.462
+50%                   50.230
+75%                   78.935
+max                  137.960
+Trend counts: {'stable': 2141, 'rising': 1278, 'declining': 741}
+Classification: {'safe': 1459, 'semi-critical': 1272, 'critical': 857, 'overexploited': 572}
+
+--- 8. WATER SOURCE STATS ---
+       availability_fraction  shortfall_lpd  supply_liters_per_day
+count                960.000        960.000                960.000
+mean                   0.690      14395.573              69593.516
+std                    0.242      15287.090              65517.396
+min                    0.047          0.000                505.000
+25%                    0.536          0.000              17061.750
+50%                    0.752       9459.000              46157.500
+75%                    0.887      26155.500             100774.250
+max                    1.000      60196.000             245664.000
+Status: {'functional': 528, 'stressed': 240, 'non-functional': 192}
+
+--- 9. VILLAGE TIER DISTRIBUTION ---
+  Green: 20 (25.0%)
+  Yellow: 24 (30.0%)
+  Orange: 20 (25.0%)
+  Red: 16 (20.0%)
+
+--- 10. NULL CHECKS ---
+rainfall nulls:     0
+groundwater nulls:  0
+water_src nulls:    0
+villages nulls:     0
+
+--- 11. NEGATIVE RAINFALL ROWS ---
+  0 rows with negative rainfall
+
+--- 12. SEQUENCE FEASIBILITY ---
+  After interp to daily: 29200 rows
+  Window=30 sequences:   26800
+  Train(80%):            21440
+  Val(10%):              2680
+  Test(10%):             2680
+
+--- 13. CLASS BALANCE (derived labels) ---
+  Drought=1 (Orange+Red):   36 villages (45.0%)
+  Drought=0 (Green+Yellow): 44 villages (55.0%)
+
+--- 14. PRD FEATURE GAP SUMMARY ---
+  rainfall_mm:      PRESENT  (monthly, needs daily interpolation)
+  rain_7d:          MISSING  (derive from interpolated daily)
+  rain_30d:         PRESENT  (= monthly total)
+  temperature:      MISSING  (generate from Chandrapur IMD normals)
+  humidity:         MISSING  (generate from Chandrapur IMD normals)
+  spi_approx:       PRESENT  (already computed)
+  gw_depth:         PRESENT  (weekly, needs daily forward-fill)
+  availability_frac:PRESENT  (monthly, needs forward-fill)
+  drought_label:    ABSENT   (derive from stress_tier -> binary)
+
+--- VERDICT ---
+  Dataset internally consistent: YES
+  Nulls: NONE
+  Class balance: REASONABLE (~45% drought, ~55% non-drought)
+  Resolution gap: monthly/weekly -> needs daily interpolation
+  Missing features: temp, humidity -> easily synthetic-generated
+  Sequence count after fix: 26,800 -> SUFFICIENT for LSTM
+  Action needed: 1 preprocessing script before training

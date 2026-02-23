@@ -1,0 +1,27 @@
+[export] Loading scaler...
+[export] Saved inference_bundle.pkl  (1.6 KB)
+  Features (8):  ['rainfall_mm', 'rain_7d', 'rain_30d', 'temp_max_c', 'humidity_pct', 'gw_depth_m', 'availability_frac', 'spi_approx']
+  Window size: 30 days
+  Model path:  D:\Hack-A-Cause_Sliding_Window\ML\models\drought_lstm.keras
+  Accuracy:    99.78%
+  AUC-ROC:     1.0000
+  F1 Score:    0.9975
+
+[export] Bundle contents:
+  scaler               -> MinMaxScaler
+  feature_names        -> list
+  window_size          -> int
+  n_features           -> int
+  model_path           -> str
+  risk_thresholds      -> dict
+  risk_colors          -> dict
+  model_metrics        -> dict
+  dataset_meta         -> dict
+  climate_normals      -> dict
+  exported_at          -> str
+  version              -> str
+
+[export] Done. Load in FastAPI with:
+  import pickle
+  bundle = pickle.load(open('models/inference_bundle.pkl','rb'))
+  scaler = bundle['scaler']
