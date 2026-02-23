@@ -1,20 +1,21 @@
 'use client'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Droplet, LayoutDashboard, Truck, Map, MessageSquare, Settings, Users, FileText, BarChart3, Sparkles, Bell } from 'lucide-react';
+import { Droplet, LayoutDashboard, Truck, Map, MessageSquare, Settings, Users, FileText, BarChart3, Sparkles, Bell, History } from 'lucide-react';
 
 export function Sidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Tanker Fleet', href: '/tracking', icon: Truck },
-    { name: 'AI Insights', href: '/ai-insights', icon: Sparkles },
-    { name: 'SMS Alerts', href: '/alerts', icon: MessageSquare },
-    { name: 'User Management', href: '/users', icon: Users },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Dashboard',          href: '/',                   icon: LayoutDashboard },
+    { name: 'Analytics',           href: '/analytics',          icon: BarChart3 },
+    { name: 'Tanker Fleet',        href: '/tracking',           icon: Truck },
+    { name: 'AI Insights',         href: '/ai-insights',        icon: Sparkles },
+    { name: 'Prediction History',  href: '/prediction-history', icon: History },
+    { name: 'SMS Alerts',          href: '/alerts',             icon: MessageSquare },
+    { name: 'User Management',     href: '/users',              icon: Users },
+    { name: 'Notifications',       href: '/notifications',      icon: Bell },
+    { name: 'Settings',            href: '/settings',           icon: Settings },
   ];
 
   return (
