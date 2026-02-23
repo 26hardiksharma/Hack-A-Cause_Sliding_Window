@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
-from app.schemas import TankerStatus, TankerUpdate, RouteOptimizationRequest, RouteOptimizationResponse
+from app.schemas import TankerStatus, TankerUpdate, RouteOptimizationRequest, RouteOptimizationResponse, TankerRequirementPrediction
 
 router = APIRouter()
 
@@ -136,6 +136,46 @@ def optimize_routes(payload: RouteOptimizationRequest):
         routes            = routes,
         total_tankers     = len(routes),
         estimated_coverage = round(coverage, 1),
+    )
+
+
+@router.get("/tankers/predict-requirements", response_model=TankerRequirementPrediction)
+def predict_tanker_requirements(district_id: int, population: int, water_per_capita_liters: int = 40):
+    """
+    Predict the number of tankers required for a given area (district_id) based on the population,
+    standard water requirement, and the ML-predicted drought probability.
+    """
+    from app.routes.districts import _DEMO_VWSI
+    drought_prob = _DEMO_VWSI.get(district_id, 0.5)
+
+    # Try fetching real prediction from DB
+    try:
+        from app.db import get_supabase
+        resp = get_supabase().table("predictions") \
+                             .select("drought_prob") \
+                             .eq("district_id", district_id) \
+                             .order("predicted_at", desc=True) \
+                             .limit(1) \
+                             .execute()
+        if resp.data:
+            drought_prob = resp.data[0]["drought_prob"]
+    except Exception:
+        pass
+
+    # Formula: total req liters = population * base requirement * drought severity factor
+    required_liters = population * water_per_capita_liters * drought_prob
+    
+    # Assuming average tanker size is 10,000L
+    avg_tanker_capacity = 10000
+    estimated_tankers = int((required_liters + avg_tanker_capacity - 1) // avg_tanker_capacity)
+
+    return TankerRequirementPrediction(
+        district_id=district_id,
+        population=population,
+        water_per_capita_liters=water_per_capita_liters,
+        drought_prob=round(drought_prob, 3),
+        required_liters=round(required_liters, 2),
+        estimated_tankers_required=estimated_tankers
     )
 
 

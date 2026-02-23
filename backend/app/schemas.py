@@ -127,6 +127,95 @@ class RouteOptimizationResponse(BaseModel):
     estimated_coverage: float
 
 
+# ── Route Optimization & Prediction ───────────────────────────────────────────
+class TankerRequirementPrediction(BaseModel):
+    district_id: int
+    population: int
+    water_per_capita_liters: int = 40
+    drought_prob: float
+    required_liters: float
+    estimated_tankers_required: int
+
+
+class RouteStep(BaseModel):
+    instruction: str
+    distance_m: int
+    duration_s: int
+
+
+class DispatchRouteRequest(BaseModel):
+    """Authority selects a tanker dispatch location and a destination."""
+    tanker_id: Optional[int] = Field(None, description="Tanker to dispatch; omit to let the system auto-assign")
+    origin_lat: float  = Field(..., description="Dispatch (source) latitude")
+    origin_lng: float  = Field(..., description="Dispatch (source) longitude")
+    origin_label: Optional[str] = Field(None, description="Human-readable depot / village name")
+    dest_lat: float    = Field(..., description="Destination latitude")
+    dest_lng: float    = Field(..., description="Destination longitude")
+    dest_label: Optional[str] = Field(None, description="Human-readable destination name")
+    priority: Literal["normal", "urgent", "critical"] = "normal"
+    notes: Optional[str] = None
+
+
+class DispatchRouteResponse(BaseModel):
+    dispatch_id: str
+    tanker_id: Optional[int]
+    vehicle_number: Optional[str]
+    driver_name: Optional[str]
+    source: Literal["google_maps", "haversine_fallback"]
+    distance_km: float
+    duration_min: int
+    fuel_liters_est: float
+    encoded_polyline: str
+    maps_url: str
+    steps: List[RouteStep]
+    start_address: str
+    end_address: str
+    priority: str
+    dispatched_at: datetime
+    status: Literal["dispatched", "en_route", "completed", "cancelled"] = "dispatched"
+
+
+class SmartAssignRequest(BaseModel):
+    """
+    Given a destination and optionally a district / urgency hint,
+    the system finds the best available tanker (nearest + adequate load)
+    and auto-dispatches it.
+    """
+    dest_lat: float
+    dest_lng: float
+    dest_label: Optional[str] = None
+    required_liters: int = Field(5000, ge=1000, description="Minimum load required")
+    priority: Literal["normal", "urgent", "critical"] = "normal"
+    notes: Optional[str] = None
+
+
+class SmartAssignResponse(BaseModel):
+    message: str
+    dispatch: DispatchRouteResponse
+    tankers_evaluated: int
+
+
+class ActiveDispatch(BaseModel):
+    dispatch_id: str
+    tanker_id: Optional[int]
+    vehicle_number: Optional[str]
+    driver_name: Optional[str]
+    origin_label: Optional[str]
+    dest_label: Optional[str]
+    distance_km: float
+    duration_min: int
+    priority: str
+    status: str
+    dispatched_at: datetime
+    maps_url: str
+
+
+class CompleteDispatchResponse(BaseModel):
+    dispatch_id: str
+    status: str
+    message: str
+
+
 # ── User ──────────────────────────────────────────────────────────────────────
 class UserCreate(BaseModel):
     name: str

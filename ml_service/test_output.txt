@@ -1,0 +1,47 @@
+=== GET /health ===
+  status:       ok
+  model_loaded: True
+  accuracy:     99.78%
+  auc_roc:      1.0
+  uptime_s:     115.5s
+  version:      1.0.0
+
+=== GET /risk-levels ===
+  LOW         0.00-0.20  #22C55E  sms=False
+  MEDIUM      0.20-0.40  #EAB308  sms=False
+  HIGH        0.40-0.70  #F97316  sms=True
+  CRITICAL    0.70-1.00  #EF4444  sms=True
+
+=== POST /predict ===
+  village_id:          VLG0001
+  drought_probability: 0.9989
+  risk_level:          CRITICAL
+  risk_color:          #EF4444
+  inference_ms:        188.7ms
+
+=== POST /predict (healthy -- green zone) ===
+  drought_probability: 0.0009
+  risk_level:          LOW
+
+=== POST /predict/live/VLG0001?month=5 ===
+  drought_probability: 0.001
+  risk_level:          LOW
+  predicted_at:        2026-02-23T08:20:59.633776Z
+
+=== POST /predict/batch (3 villages) ===
+  villages_count: 3
+  total_ms:       181.5ms
+  VLG0001  prob=0.9989  level=CRITICAL
+  VLG0002  prob=0.0009  level=LOW
+  VLG0003  prob=0.9989  level=CRITICAL
+
+=== GET /predict/risk-map ===
+  timestamp:   2026-02-23T08:21:04.107417Z
+  villages:    80
+  summary:     {'LOW': 45, 'MEDIUM': 0, 'HIGH': 0, 'CRITICAL': 35}
+  Sample (first 3):
+    VLG0001 Salegaon              LOW         prob=0.001
+    VLG0002 Pulgaon               LOW         prob=0.001
+    VLG0003 Hingna                LOW         prob=0.0011
+
+=== ALL TESTS PASSED ===
