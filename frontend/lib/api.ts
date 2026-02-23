@@ -10,12 +10,37 @@ async function fetcher<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
+  if (!res.ok) {
+    let message = `API error ${res.status}: ${path}`;
+    try {
+      const body = await res.json();
+      if (body?.detail) message = body.detail;
+    } catch {/* ignore parse error */}
+    throw new Error(message);
+  }
   return res.json();
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  role: 'admin' | 'official' | 'user';
+  region: string | null;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: AuthUser;
+}
+
+export interface RegisterResponse {
+  message: string;
+  user_id?: number;
+}
 
 export interface District {
   id: number;
@@ -89,6 +114,57 @@ export interface User {
 
 // ── Districts ─────────────────────────────────────────────────────────────────
 export const api = {
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  auth: {
+    /**
+     * Admin / official login → POST /auth/login
+     * Returns a bearer token + user object.
+     */
+    login: (payload: { email: string; password: string }) =>
+      fetcher<LoginResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+
+    /**
+     * End-user login → POST /auth/user-login
+     */
+    userLogin: (payload: { email: string; password: string }) =>
+      fetcher<LoginResponse>('/auth/user-login', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+
+    /**
+     * Admin / official registration → POST /auth/register
+     */
+    register: (payload: {
+      full_name: string;
+      designation: string;
+      department_id: string;
+      district: string;
+      email: string;
+    }) =>
+      fetcher<RegisterResponse>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+
+    /**
+     * End-user registration → POST /auth/user-register
+     */
+    userRegister: (payload: {
+      full_name: string;
+      official_id: string;
+      district: string;
+      password: string;
+    }) =>
+      fetcher<RegisterResponse>('/auth/user-register', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+  },
+
   districts: {
     list:    ()        => fetcher<{ districts: District[]; total: number }>('/districts'),
     get:     (id: number) => fetcher<District>(`/districts/${id}`),

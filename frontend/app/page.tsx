@@ -51,13 +51,13 @@ export default function LandingPage() {
           {/* CTA */}
           <div className="flex items-center gap-4">
             <Link
-              href="/login"
+              href="/user-login"
               className="hidden sm:block text-slate-900 text-sm font-medium hover:text-[#135bec] transition-colors"
             >
               Login
             </Link>
             <Link
-              href="/register"
+              href="/user-register"
               className="flex items-center justify-center rounded-lg bg-[#135bec] px-4 py-2 text-sm font-bold text-white transition-all hover:bg-[#0f4bc4] shadow-sm hover:shadow-md"
             >
               Request Demo

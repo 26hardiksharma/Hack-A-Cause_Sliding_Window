@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Unified Login &amp; Registration - Water Resilience</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "primary-dark": "#0d43b3",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .geometric-pattern {
+            background-image: radial-gradient(#ffffff 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.08;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col lg:flex-row overflow-hidden">
+<!-- Left Panel: Branding & Info -->
+<div class="relative w-full lg:w-5/12 xl:w-1/3 bg-background-dark flex flex-col justify-between p-8 lg:p-12 text-white overflow-hidden">
+<!-- Background Pattern & Abstract Map -->
+<div class="absolute inset-0 bg-primary/20 pointer-events-none"></div>
+<div class="absolute inset-0 geometric-pattern pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-background-dark to-transparent pointer-events-none z-10"></div>
+<!-- Abstract Topo Lines / Map Graphic -->
+<div class="absolute inset-0 opacity-20 pointer-events-none z-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'100%25\' height=\'100%25\' viewBox=\'0 0 100 100\' preserveAspectRatio=\'none\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 100 Q 20 50 50 50 T 100 0\' stroke=\'white\' stroke-width=\'0.5\' fill=\'none\' /%3E%3Cpath d=\'M0 80 Q 30 40 60 60 T 100 20\' stroke=\'white\' stroke-width=\'0.5\' fill=\'none\' /%3E%3C/svg%3E'); background-size: cover;">
+</div>
+<div class="relative z-20">
+<div class="flex items-center gap-2 mb-8">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xl">water_drop</span>
+</div>
+<span class="font-bold text-lg tracking-wide uppercase opacity-90">HydroGov</span>
+</div>
+</div>
+<div class="relative z-20 mt-auto mb-20 lg:mb-0">
+<h1 class="text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight mb-4 text-white">
+                Empowering Water Resilience
+            </h1>
+<p class="text-lg text-slate-300 font-light max-w-md leading-relaxed">
+                Secure access to the centralized Drought Governance &amp; Water Tanker Management System.
+            </p>
+</div>
+<div class="relative z-20 text-xs text-slate-500 font-medium tracking-wider uppercase mt-8 lg:mt-0">
+            Official Government Portal © 2024
+        </div>
+</div>
+<!-- Right Panel: Authentication Form -->
+<div class="w-full lg:w-7/12 xl:w-2/3 bg-white dark:bg-background-dark flex flex-col justify-center items-center p-6 lg:p-12 overflow-y-auto">
+<div class="w-full max-w-[480px] py-10">
+<!-- Toggle Switch -->
+<div class="bg-background-light dark:bg-[#1e2532] p-1.5 rounded-lg flex mb-8">
+<a class="flex-1 py-2.5 text-center text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors" href="#">
+                    Login
+                </a>
+<button class="flex-1 py-2.5 text-center text-sm font-bold text-primary bg-white dark:bg-background-dark dark:text-white rounded shadow-sm border border-slate-200 dark:border-slate-700 transition-all">
+                    Create Account
+                </button>
+</div>
+<!-- Form Header -->
+<div class="mb-8">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Register New Account</h2>
+<p class="text-slate-500 dark:text-slate-400">Enter your official details to request system access.</p>
+</div>
+<!-- Form Fields -->
+<form class="space-y-5">
+<!-- Full Name -->
+<div class="space-y-1.5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="fullname">
+                        Full Name
+                    </label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:bg-[#1a202c] transition-all bg-white" id="fullname" placeholder="e.g. Sarah Mitchell" type="text"/>
+</div>
+</div>
+<!-- Official ID -->
+<div class="space-y-1.5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="official-id">
+                        Official ID / Badge No.
+                    </label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">badge</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:bg-[#1a202c] transition-all bg-white" id="official-id" placeholder="GOV-ID-XXXX" type="text"/>
+</div>
+</div>
+<!-- District Select -->
+<div class="space-y-1.5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="district">
+                        Assigned District
+                    </label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+</div>
+<select class="block w-full pl-10 pr-10 py-3 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:bg-[#1a202c] transition-all bg-white appearance-none" id="district">
+<option disabled="" selected="" value="">Select District</option>
+<option value="north">North District</option>
+<option value="south">South District</option>
+<option value="central">Central Governance Zone</option>
+<option value="water_board">Water Board HQ</option>
+</select>
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Password -->
+<div class="space-y-1.5">
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300" for="password">
+                        Password
+                    </label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary dark:bg-[#1a202c] transition-all bg-white" id="password" placeholder="Min. 8 characters" type="password"/>
+</div>
+</div>
+<!-- Terms -->
+<div class="flex items-start">
+<div class="flex h-5 items-center">
+<input class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary" id="terms" name="terms" type="checkbox"/>
+</div>
+<div class="ml-3 text-sm">
+<label class="font-medium text-slate-500 dark:text-slate-400" for="terms">I agree to the <a class="text-primary hover:text-primary-dark underline decoration-1 underline-offset-2" href="#">Terms of Service</a> and <a class="text-primary hover:text-primary-dark underline decoration-1 underline-offset-2" href="#">Privacy Policy</a>.</label>
+</div>
+</div>
+<!-- Primary Button -->
+<button class="w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all" type="button">
+                    Register Account
+                </button>
+</form>
+<!-- Divider -->
+<div class="relative my-8">
+<div aria-hidden="true" class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
+</div>
+<div class="relative flex justify-center">
+<span class="bg-white dark:bg-background-dark px-2 text-sm text-slate-400 uppercase tracking-wide font-medium">Or continue with</span>
+</div>
+</div>
+<!-- SSO Button -->
+<button class="w-full flex justify-center items-center gap-3 py-3 px-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm bg-white dark:bg-[#1e2532] text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#252d3d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200 transition-all" type="button">
+<div class="w-5 h-5 bg-slate-800 rounded-full flex items-center justify-center text-white text-[10px] font-bold tracking-tighter" title="Government Emblem">GOV</div>
+<span>Government SSO</span>
+</button>
+<!-- Footer Links -->
+<div class="mt-8 flex justify-center gap-6 text-sm text-slate-400">
+<a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="#">Help Center</a>
+<a class="hover:text-slate-600 dark:hover:text-slate-300 transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</div>
+</body></html>
