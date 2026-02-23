@@ -47,13 +47,14 @@ def predict_batch_route(payload: BatchPredictionRequest):
 
     predictions = [
         PredictionResult(
-            district_id  = r["district_id"],
-            drought_prob = r["drought_prob"],
-            risk_level   = r["risk_level"],
-            predicted_at = datetime.fromisoformat(r["predicted_at"]),
-            horizon_days = 7,
+            district_id   = payload.districts[i].district_id,
+            district_name = payload.districts[i].district_name,
+            drought_prob  = results[i]["drought_prob"],
+            risk_level    = results[i]["risk_level"],
+            predicted_at  = datetime.fromisoformat(results[i]["predicted_at"]),
+            horizon_days  = 7,
         )
-        for r in results
+        for i in range(len(results))
     ]
     return BatchPredictionResponse(
         predictions   = predictions,

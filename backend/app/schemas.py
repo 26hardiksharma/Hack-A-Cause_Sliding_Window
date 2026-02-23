@@ -45,6 +45,7 @@ class District(DistrictBase):
 # ── Prediction ────────────────────────────────────────────────────────────────
 class PredictionInput(BaseModel):
     district_id: int
+    district_name: Optional[str] = None
     rainfall: float = Field(..., ge=0, description="mm")
     temperature: float = Field(..., description="°C")
     humidity: float = Field(..., ge=0, le=100, description="%")
