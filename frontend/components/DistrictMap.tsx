@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { District, RiskLevel } from '@/lib/api';
+import { loadMapsScript } from '@/lib/maps-loader';
 
 // ── Risk colour map ───────────────────────────────────────────────────────────
 const RISK_COLORS: Record<RiskLevel, string> = {
@@ -19,26 +20,6 @@ function circlePinUrl(color: string, size = 28) {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-// ── Script loading singleton (shared key so Maps JS only loads once) ───────────
-let _mapsReady = false;
-const _callbacks: Array<() => void> = [];
-
-function loadMapsScript(apiKey: string, cb: () => void) {
-    if (_mapsReady) { cb(); return; }
-    _callbacks.push(cb);
-    if (document.querySelector('script[data-gm2]')) return;
-    const s = document.createElement('script');
-    s.setAttribute('data-gm2', '1');
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
-    s.async = true;
-    s.defer = true;
-    s.onload = () => {
-        _mapsReady = true;
-        _callbacks.forEach(f => f());
-        _callbacks.length = 0;
-    };
-    document.head.appendChild(s);
-}
 
 // ── Info window content ───────────────────────────────────────────────────────
 function districtInfoHtml(d: District) {
