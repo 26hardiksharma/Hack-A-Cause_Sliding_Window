@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.routes import predictions, districts, health, sms, tankers, users
+from app.routes import predictions, districts, health, sms, tankers, users, routing
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,6 +45,7 @@ app.include_router(districts.router,    prefix="/api",          tags=["Districts
 app.include_router(sms.router,          prefix="/api",          tags=["SMS"])
 app.include_router(tankers.router,      prefix="/api",          tags=["Tankers"])
 app.include_router(users.router,        prefix="/api",          tags=["Users"])
+app.include_router(routing.router,      prefix="/api",          tags=["Routing"])
 
 if __name__ == "__main__":
     import uvicorn
