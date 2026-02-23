@@ -34,8 +34,10 @@ with open(os.path.join(PROCESSED, "feature_names.txt")) as f:
 with open(os.path.join(PROCESSED, "dataset_stats.json")) as f:
     dataset_stats = json.load(f)
 
-# ── Load training evaluation metrics ─────────────────────────────────────────
-with open(os.path.join(MODELS, "evaluation.json")) as f:
+# Try v2 evaluation first, fall back to v1
+eval_v2 = os.path.join(MODELS, "evaluation_v2.json")
+eval_v1 = os.path.join(MODELS, "evaluation.json")
+with open(eval_v2 if os.path.exists(eval_v2) else eval_v1) as f:
     eval_metrics = json.load(f)
 
 # ── Bundle ────────────────────────────────────────────────────────────────────
@@ -91,7 +93,7 @@ bundle = {
 
     # Export metadata
     "exported_at":   datetime.utcnow().isoformat() + "Z",
-    "version":       "1.0.0",
+    "version":       "3.0.0",   # v3: 12 features, recall-maximised, RobustScaler
 }
 
 # ── Save ──────────────────────────────────────────────────────────────────────

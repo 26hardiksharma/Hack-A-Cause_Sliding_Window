@@ -101,7 +101,13 @@ def _load_datasets():
 
 
 def _build_sequence_for_village(village_id: str, month: Optional[int] = None) -> list[list[float]]:
-    """Reconstruct a 30-day feature window for a village using synthetic CSVs."""
+    """
+    Reconstruct a 30-day feature window for a village.
+    Produces exactly the 12 features from preprocess-v3:
+      rainfall_mm, rain_7d, rain_30d, temp_max_c, humidity_pct,
+      rain_deficit_pct, drought_index, consecutive_dry_days,
+      spi_30d, heat_stress, rain_trend_7d, rain_30d_vs_7d_ratio
+    """
     _load_datasets()
     bundle = pred.get_bundle()
     norms  = bundle["climate_normals"]
@@ -110,57 +116,85 @@ def _build_sequence_for_village(village_id: str, month: Optional[int] = None) ->
     if vrow.empty:
         raise HTTPException(status_code=404, detail=f"Village '{village_id}' not found")
     vrow = vrow.iloc[0]
+    stress_tier = vrow.get("stress_tier", "Yellow")
 
     rf_v = _rainfall_df[_rainfall_df["village_id"] == village_id]
     gw_v = _gw_df[_gw_df["village_id"] == village_id].copy()
     ws_v = _ws_df[_ws_df["village_id"] == village_id]
 
-    # Use current month if not specified
     current_month = month or datetime.utcnow().month
-    # Build 30 days ending at the end of current_month
-    # Use the monthly values + spread across days (same as preprocess.py)
     days_in_month = pd.Period(f"2025-{current_month:02d}", freq="M").days_in_month
 
-    # Monthly feature lookup
-    rf_row = rf_v[rf_v["month"] == current_month]
-    ws_row = ws_v[ws_v["month"] == current_month]
+    rf_row     = rf_v[rf_v["month"] == current_month]
+    monthly_rf = float(rf_row["actual_rainfall_mm"].values[0]) if not rf_row.empty else 0.0
+    daily_rf_base = monthly_rf / max(days_in_month, 1)
 
-    monthly_rf    = float(rf_row["actual_rainfall_mm"].values[0]) if not rf_row.empty else 0.0
-    spi           = float(rf_row["spi_approx"].values[0])         if not rf_row.empty else 0.0
-    avail_frac    = float(ws_row["availability_fraction"].values[0]) if not ws_row.empty else 0.5
+    # Climate normals — handle both int and str keys
+    tmax_normal = float(norms["tmax"].get(str(current_month),
+                        norms["tmax"].get(current_month, 32.0)))
+    rh_normal   = float(norms["rh"].get(str(current_month),
+                        norms["rh"].get(current_month, 60.0)))
 
-    # Take latest groundwater depth
-    gw_depth = float(gw_v.sort_values("date")["depth_below_surface_m"].iloc[-1]) if not gw_v.empty else 50.0
+    TIER_TEMP_BIAS = {"Green": -1.5, "Yellow": 0.0, "Orange": 2.0, "Red": 4.0}
+    TIER_RH_SCALE  = {"Green": 1.10, "Yellow": 1.00, "Orange": 0.88, "Red": 0.75}
+    TIER_BASE_IDX  = {"Green": 0.15, "Yellow": 0.32, "Orange": 0.68, "Red": 0.85}
+    tbias     = TIER_TEMP_BIAS.get(stress_tier, 0.0)
+    rscale    = TIER_RH_SCALE.get(stress_tier, 1.0)
+    tier_base = TIER_BASE_IDX.get(stress_tier, 0.4)
 
-    daily_rf  = monthly_rf / max(days_in_month, 1)
-    tmax      = norms["tmax"].get(current_month, 32.0)
-    rh        = norms["rh"].get(current_month, 60.0)
+    CHANDRAPUR_NORMALS_MM = {
+        1:11.4, 2:8.9, 3:14.6, 4:10.8, 5:11.6,
+        6:180.6, 7:374.0, 8:374.1, 9:203.1, 10:65.1, 11:9.9, 12:7.9
+    }
+    normal_30d = CHANDRAPUR_NORMALS_MM.get(current_month, 30.0)
+
+    rain_series = np.array(
+        [max(0.0, daily_rf_base * np.random.uniform(0.75, 1.25)) for _ in range(30)],
+        dtype=np.float64
+    )
+    rain_mean = float(rain_series.mean())
+    rain_std  = float(rain_series.std() + 1e-6)
 
     seq = []
-    cum_7d  = 0.0
-    cum_30d = 0.0
-    for day in range(30):
-        noise    = np.random.uniform(0.8, 1.2)
-        day_rf   = max(0.0, daily_rf * noise)
-        cum_7d   = cum_7d  + day_rf if day < 7  else cum_7d  - (daily_rf * 0.8) + day_rf
-        cum_30d  = cum_30d + day_rf
+    cdd = 0.0
+    for i in range(30):
+        day_rf   = float(rain_series[i])
+        rain_7d  = float(rain_series[max(0, i-6):i+1].sum())
+        rain_30d = float(rain_series[:i+1].sum())
 
-        day_tmax = tmax + np.random.normal(0, 1.2)
-        day_rh   = float(np.clip(rh + np.random.normal(0, 3), 10, 100))
-        day_gw   = float(max(1.0, gw_depth + np.random.normal(0, 0.15)))
-        day_av   = float(np.clip(avail_frac + np.random.normal(0, 0.02), 0, 1))
+        day_tmax = float(np.clip(tmax_normal + tbias + np.random.normal(0, 1.5), 10, 50))
+        day_rh   = float(np.clip(rh_normal * rscale + np.random.normal(0, 3.5), 5, 100))
+
+        deficit      = float(np.clip((normal_30d - rain_30d) / max(normal_30d, 0.1), 0, 1))
+        temp_norm_v  = float(np.clip((day_tmax - 25) / 20, 0, 1))
+        rh_norm_v    = float(np.clip(day_rh / 100, 0, 1))
+        computed_idx = 0.50 * deficit + 0.25 * temp_norm_v + 0.25 * (1 - rh_norm_v)
+        drought_idx  = float(np.clip(0.55 * computed_idx + 0.45 * tier_base, 0, 1))
+
+        cdd      = cdd + 1 if day_rf < 1.0 else 0.0
+        cdd_norm = float(min(cdd / 30.0, 1.0))
+        spi_30d  = float(np.clip(
+            (rain_30d - rain_mean * (i+1) / 30) / rain_std, -3, 3
+        ))
+        heat_stress = float(day_tmax * (1 - day_rh / 100))
+
+        if i >= 7:
+            win   = rain_series[i-7:i]
+            x     = np.arange(7, dtype=np.float64)
+            slope = float(np.cov(x, win)[0, 1]) / float(np.var(x) + 1e-9)
+        else:
+            slope = 0.0
+        trend = float(np.clip(slope / 5.0, -1, 1))
+        ratio = float(np.clip(rain_7d / (rain_30d / 4.3 + 0.1), 0, 5))
 
         seq.append([
-            round(day_rf,  4),
-            round(cum_7d,  4),
-            round(cum_30d, 4),
-            round(day_tmax,4),
-            round(day_rh,  4),
-            round(day_gw,  4),
-            round(day_av,  4),
-            round(spi,     4),
+            round(day_rf,      4), round(rain_7d,     4), round(rain_30d,    4),
+            round(day_tmax,    4), round(day_rh,      4), round(deficit,     4),
+            round(drought_idx, 4), round(cdd_norm,    4), round(spi_30d,     4),
+            round(heat_stress, 4), round(trend,       4), round(ratio,       4),
         ])
     return seq
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════
